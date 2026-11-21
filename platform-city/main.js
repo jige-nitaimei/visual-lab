@@ -114,13 +114,16 @@ let traced = null;
 let tokAcc = 0;
 const _pv = new THREE.Vector3();
 
-// 视频只有 0.17 半径，射线几乎点不中；改成「屏幕空间最近点」，20 来像素内都算点中
+// 视频只有 0.17 半径，射线几乎点不中；改成「屏幕空间最近点」，20 来像素内都算点中。
+// 手指比鼠标粗得多，触屏设备把容差放到 46px，否则要戳好几次。
+const PICK_PX = (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches) ? 46 : 26;
+
 function pickToken(e) {
   const rect = canvas.getBoundingClientRect();
   const mx = e.clientX - rect.left;
   const my = e.clientY - rect.top;
   let best = null;
-  let bestD = 26;
+  let bestD = PICK_PX;
   for (const tk of city.tokens) {
     if (tk.state === 'idle') continue;
     _pv.copy(tk.mesh.position).project(camera);
@@ -309,6 +312,18 @@ for (const c of document.querySelectorAll('#d-only input')) {
 
 $('fold').addEventListener('click', () => document.body.classList.toggle('folded'));
 
+// 手机上一屏塞不下这么多面板：先把次要的收起来，标题条仍然可以点开。
+if (matchMedia('(max-width: 820px)').matches) {
+  for (const id of ['legend', 'tune', 'sim', 'feed']) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('collapsed');
+  }
+}
+
+const rotEl = document.getElementById('rot');
+const rotX = document.getElementById('rot-x');
+if (rotX) rotX.addEventListener('click', () => { rotEl.style.display = 'none'; });
+
 // 城里的流水：每半秒对一次，没新事就不动 DOM
 const fdList = $('fd-list');
 let fdLast = -1;
@@ -493,13 +508,35 @@ function backOverview() {
   backBtn.classList.remove('on');
 }
 
+// 触屏双指缩放 —— 手机上没有滚轮，捏合是唯一的远近手段。
+const ptrs = new Map();
+let pinchStart = 0;
+let pinchRadius = 0;
+
 canvas.addEventListener('pointerdown', (e) => {
-  down = { x: e.clientX, y: e.clientY };
-  dragged = false;
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size >= 2) {
+    const [a, b] = [...ptrs.values()];
+    pinchStart = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    pinchRadius = goal.radius;
+    down = null;
+    dragged = true;
+  } else {
+    down = { x: e.clientX, y: e.clientY };
+    dragged = false;
+  }
   canvas.setPointerCapture(e.pointerId);
 });
 
 canvas.addEventListener('pointermove', (e) => {
+  if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size >= 2) {
+    const [a, b] = [...ptrs.values()];
+    const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    goal.radius = Math.min(150, Math.max(9, pinchRadius * (pinchStart / dist)));
+    flying = true;
+    return;
+  }
   if (!down) return;
   const dx = e.clientX - down.x;
   const dy = e.clientY - down.y;
@@ -517,6 +554,8 @@ canvas.addEventListener('pointermove', (e) => {
 });
 
 canvas.addEventListener('pointerup', (e) => {
+  ptrs.delete(e.pointerId);
+  if (ptrs.size < 2) pinchStart = 0;
   if (down && !dragged) {
     const tk = pickToken(e);
     if (tk) {
@@ -533,7 +572,11 @@ canvas.addEventListener('pointerup', (e) => {
   down = null;
 });
 
-canvas.addEventListener('pointercancel', () => { down = null; });
+canvas.addEventListener('pointercancel', (e) => {
+  ptrs.delete(e.pointerId);
+  if (ptrs.size < 2) pinchStart = 0;
+  down = null;
+});
 
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
@@ -716,6 +759,9 @@ function resize() {
     renderer.setSize(w, h, false);
   }
   camera.aspect = w / h;
+  // 竖屏时同样的 55° 垂直视角只装得下很窄一条，整座城会溢出画面。
+  // 按宽高比补偿垂直 fov：横屏保持 55，竖屏放大到最多 78。
+  camera.fov = w < h ? Math.min(78, 55 / Math.max(0.55, camera.aspect)) : 55;
   camera.updateProjectionMatrix();
 }
 
