@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>平台城 · 短视频生态沙盘</title>
+<style>
+  :root{
+    --ink:#cfe6ef; --dim:#7b98a8; --cyan:#22e7ff; --mag:#ff2fd0; --go:#7ef0d0;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:#04080d;color:var(--ink);
+    font:13px/1.5 "Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    overflow:hidden;user-select:none}
+  #stage{position:fixed;inset:0}
+  canvas{display:block;width:100%;height:100%}
+
+  /* ---------- HUD ---------- */
+  #hud{position:fixed;inset:0;pointer-events:none}
+  #brand{position:absolute;left:22px;top:18px;pointer-events:auto}
+  #brand h1{margin:0;font-size:17px;letter-spacing:.14em;font-weight:600}
+  #brand h1 b{color:var(--cyan)}
+  #scale{margin-top:6px;font-size:11px;letter-spacing:.18em;color:var(--dim);
+    text-transform:uppercase}
+  #scale i{color:var(--go);font-style:normal}
+  #crumb{margin-top:10px;font-size:11px;color:var(--dim)}
+  #crumb span{color:var(--ink)}
+
+  #legend{position:absolute;left:22px;bottom:20px;pointer-events:auto;
+    background:rgba(6,14,22,.78);border:1px solid rgba(34,231,255,.16);
+    border-radius:10px;padding:11px 13px;backdrop-filter:blur(6px);min-width:212px}
+  #legend h2{margin:0 0 8px;font-size:10px;letter-spacing:.2em;color:var(--dim);
+    text-transform:uppercase;font-weight:600}
+  .lg{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12px;color:#a9c4d2}
+  .sw{width:9px;height:9px;border-radius:2px;flex:none;box-shadow:0 0 8px currentColor}
+
+  #tip{position:absolute;right:22px;bottom:20px;font-size:11px;color:var(--dim);
+    text-align:right;line-height:1.8;pointer-events:auto}
+  #tip kbd{background:rgba(34,231,255,.1);border:1px solid rgba(34,231,255,.22);
+    border-radius:4px;padding:0 5px;color:#a9e9f6;font:inherit;font-size:10px}
+
+  #back{position:absolute;right:22px;top:18px;pointer-events:auto;cursor:pointer;
+    background:rgba(6,14,22,.8);border:1px solid rgba(34,231,255,.28);color:#a9e9f6;
+    border-radius:8px;padding:7px 14px;font:inherit;font-size:12px;
+    opacity:0;transition:opacity .25s,background .2s}
+  #back:hover{background:rgba(34,231,255,.14)}
+  #back.on{opacity:1}
+
+  #rolecard{position:absolute;right:22px;bottom:92px;width:270px;pointer-events:auto;
+    background:rgba(6,14,22,.92);border:1px solid rgba(34,231,255,.22);border-radius:10px;
+    padding:12px 14px;backdrop-filter:blur(8px)}
+  #rolecard[hidden]{display:none}
+#tokcard{position:absolute;left:22px;bottom:92px;width:262px;pointer-events:auto;
+  background:rgba(6,14,20,.9);border:1px solid rgba(34,231,255,.22);border-radius:10px;
+  padding:11px 13px;backdrop-filter:blur(8px);font-size:12px}
+#tokcard[hidden]{display:none}
+.tk-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+#tk-title{color:var(--go);font-size:13px;font-weight:600;letter-spacing:.06em}
+#tk-x{background:none;border:0;color:var(--dim);font-size:17px;cursor:pointer;line-height:1}
+#tk-x:hover{color:var(--ink)}
+.tk-bar{margin:5px 0 9px}
+.tk-bar i{display:block;font-style:normal;color:#7f9aab;font-size:11px;margin-bottom:3px}
+.tk-bar s{display:block;text-decoration:none;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.tk-bar s b{display:block;height:100%;background:linear-gradient(90deg,#22e7ff,#7ef0d0);border-radius:3px}
+.tk-step{display:flex;align-items:center;gap:6px;padding:3px 0;color:#a9c4d2;font-size:11.5px}
+.tk-step em{font-style:normal;margin-left:auto;font-weight:600}
+.tk-step.ok em{color:#7ef0d0}
+.tk-step.no em{color:#ff6b6b}
+.tk-step s{text-decoration:none;color:#5f7a8c;font-size:10.5px;min-width:42px;text-align:right}
+#tk-end{margin-top:8px;padding-top:7px;border-top:1px solid rgba(34,231,255,.12);
+  color:#8fb6c8;font-size:11.5px;line-height:1.6}
+#legend2{position:absolute;right:22px;top:62px;width:298px;pointer-events:auto;
+  background:rgba(6,14,20,.82);border:1px solid rgba(34,231,255,.16);border-radius:10px;
+  padding:9px 11px;backdrop-filter:blur(6px);font-size:11px}
+.lg-h{color:var(--go);font-size:11.5px;letter-spacing:.08em;margin-bottom:6px}
+.lg-row{display:flex;align-items:flex-start;gap:7px;padding:2.5px 0;color:#8fb6c8;line-height:1.5}
+.lg-row b{color:#c8dde8;font-weight:600;min-width:34px;flex:none}
+.lg-row span{flex:1}
+.lg-dot{width:7px;height:7px;border-radius:50%;background:var(--c);margin-top:5px;flex:none;box-shadow:0 0 6px var(--c)}
+.lg-line{width:14px;height:2px;background:var(--c);margin-top:6px;flex:none;box-shadow:0 0 6px var(--c)}
+.lg-arc{width:14px;height:8px;margin-top:3px;flex:none;
+  border-bottom:1.5px solid var(--c);border-radius:0 0 50% 50%;box-shadow:0 3px 6px -3px var(--c)}
+.lg-cone{width:0;height:0;margin-top:2px;flex:none;
+  border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid var(--c)}
+.lg-band{width:12px;height:3px;background:var(--c);margin-top:6px;flex:none;border-radius:2px;box-shadow:0 0 6px var(--c)}
+.lg-win{width:8px;height:8px;background:#9ff4ff;margin-top:4px;flex:none;border-radius:1px;box-shadow:0 0 5px #9ff4ff}
+  .rc-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+  #rc-name{color:var(--go);font-size:13px;letter-spacing:.08em;font-weight:600}
+  #rc-x{background:none;border:0;color:var(--dim);font-size:17px;cursor:pointer;line-height:1}
+  #rc-x:hover{color:var(--ink)}
+  #rc-desc{color:#a9c4d2;font-size:12px;line-height:1.75}
+  #rc-meta{margin-top:9px;padding-top:8px;border-top:1px solid rgba(34,231,255,.12);
+    font-size:11px;color:var(--dim);line-height:1.7}
+
+  #boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:#04080d;color:var(--dim);letter-spacing:.3em;font-size:11px;z-index:9}
+  #boot.off{display:none}
+  /* 投稿演示：按钮与逐站日志 */
+  #submit{position:absolute;right:22px;top:52px;pointer-events:auto;cursor:pointer;
+    background:rgba(8,20,28,.86);border:1px solid #7ef0d0;color:#7ef0d0;
+    font:600 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;
+    padding:9px 14px;border-radius:2px;backdrop-filter:blur(6px)}
+  #submit:hover{background:rgba(126,240,208,.16);color:#d9fff4}
+  #logcard{position:absolute;right:22px;top:96px;width:322px;max-height:62vh;
+    overflow:auto;pointer-events:auto;background:rgba(6,14,20,.9);
+    border:1px solid rgba(126,240,208,.28);border-radius:2px;
+    backdrop-filter:blur(8px);padding:10px 12px 12px;
+    font:12px/1.55 ui-monospace,Menlo,monospace;color:#9db6c4}
+  #logcard .lg-h{color:#7ef0d0;font:600 11px/1 ui-monospace,monospace;
+    letter-spacing:.1em;margin-bottom:8px;text-transform:uppercase}
+  #logcard .lg-row{padding:5px 0;border-bottom:1px solid rgba(34,231,255,.07)}
+  #logcard .lg-row b{color:#cfe9f4;font-weight:600}
+  #logcard .lg-row.ok b{color:#7ef0d0}
+  #logcard .lg-row.no b{color:#ff6b7a}
+  #logcard .lg-row.w b{color:#ffb347}
+  /* 导演台：暂停 / 跳站 / 变速 / 只演某些环节 */
+  #fold{position:absolute;left:22px;top:106px;pointer-events:auto;cursor:pointer;
+    background:rgba(8,20,28,.86);border:1px solid rgba(34,231,255,.4);color:#9ff4ff;
+    font:600 13px/1 ui-monospace,monospace;padding:8px 11px;border-radius:2px}
+  #fold:hover{background:rgba(34,231,255,.18)}
+  body.folded #legend, body.folded #legend2, body.folded #tip,
+  body.folded #logcard, body.folded #rolecard, body.folded #tokcard{display:none!important}
+
+  #director{position:absolute;left:50%;transform:translateX(-50%);bottom:22px;
+    pointer-events:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+    justify-content:center;background:rgba(6,14,20,.92);border:1px solid rgba(126,240,208,.3);
+    border-radius:3px;padding:8px 12px;backdrop-filter:blur(8px);
+    font:12px/1 ui-monospace,monospace;color:#9db6c4}
+  #director button{cursor:pointer;background:rgba(10,24,32,.9);
+    border:1px solid rgba(34,231,255,.24);color:#9ff4ff;font:inherit;
+    padding:5px 9px;border-radius:2px}
+  #director button:hover{background:rgba(34,231,255,.18)}
+  #director button.on{background:rgba(126,240,208,.22);color:#d9fff4;border-color:#7ef0d0}
+  #d-spd, #d-only{display:flex;gap:4px;align-items:center;
+    padding-left:8px;border-left:1px solid rgba(34,231,255,.14)}
+  #d-only label{display:flex;gap:3px;align-items:center;cursor:pointer;color:#8fb6c8}
+  #d-only input{accent-color:#7ef0d0;cursor:pointer}
+
+  /* 八步导览：给第一次看的人一条固定路线 */
+  #guide-btn{position:absolute;left:22px;top:148px;pointer-events:auto;cursor:pointer;
+    background:rgba(8,20,28,.86);border:1px solid rgba(255,209,102,.45);color:#ffd166;
+    font:600 13px/1 ui-monospace,monospace;padding:8px 11px;border-radius:2px}
+  #guide-btn:hover{background:rgba(255,209,102,.18)}
+  #guide{position:absolute;left:50%;transform:translateX(-50%);bottom:96px;width:min(560px,84vw);
+    pointer-events:auto;background:rgba(6,14,20,.95);border:1px solid rgba(255,209,102,.4);
+    border-radius:3px;padding:14px 16px;backdrop-filter:blur(8px);
+    font:13px/1.7 ui-monospace,monospace;color:#cfe9f4}
+  #guide .g-h{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+  #guide .g-h b{color:#ffd166;font-size:12px}
+  #guide .g-h span{flex:1;font-weight:600;color:#fff4d6}
+  #guide .g-h button{cursor:pointer;background:none;border:0;color:#8fb6c8;font:inherit}
+  #guide p{margin:0 0 12px;color:#a8c4d2}
+  #guide .g-b{display:flex;gap:8px;justify-content:flex-end}
+  #guide .g-b button{cursor:pointer;background:rgba(10,24,32,.9);border:1px solid rgba(255,209,102,.3);
+    color:#ffd166;font:inherit;padding:6px 12px;border-radius:2px}
+  #guide .g-b button:hover{background:rgba(255,209,102,.16)}
+  #guide .g-b button:disabled{opacity:.35;cursor:default}
+
+  /* 演算台：批量快进 + 你当审核 */
+  #sim{position:absolute;right:22px;top:36%;width:276px;pointer-events:auto;
+    background:rgba(6,14,20,.92);border:1px solid rgba(126,240,208,.28);border-radius:3px;
+    padding:10px 12px;backdrop-filter:blur(8px);font:12px/1.6 ui-monospace,monospace;
+    color:#9db6c4;max-height:46vh;overflow:auto}
+  #sim .sm-h{margin:0 0 8px;font-size:11px;color:#7ef0d0;letter-spacing:.08em;cursor:pointer}
+  #sim.collapsed .sm-body{display:none}
+  #sim .sm-b{display:flex;gap:6px;margin-bottom:8px}
+  #sim .sm-b button{flex:1;cursor:pointer;background:rgba(10,24,32,.9);
+    border:1px solid rgba(126,240,208,.3);color:#9ff4ff;font:inherit;padding:5px 4px;border-radius:2px}
+  #sim .sm-b button:hover{background:rgba(126,240,208,.18)}
+  #sim .sm-row{display:flex;justify-content:space-between;gap:8px;padding:1px 0}
+  #sim .sm-row b{color:#cfe9f4;font-weight:600}
+  #sim .sm-sep{border-top:1px dashed rgba(126,240,208,.22);margin:9px 0}
+  #sim .sm-empty{color:#5f7a8c}
+  #sim .sm-h2{margin:0 0 6px;font-size:11px;color:#ffd166;letter-spacing:.08em}
+  #sim .au{background:rgba(0,0,0,.28);border-radius:2px;padding:6px 8px;margin-bottom:6px}
+  #sim .au-n{color:#cfe9f4;font-weight:600}
+  #sim .au-m{color:#7d99a8;font-size:11px}
+  #sim .au-b{display:flex;gap:6px;margin-top:5px}
+  #sim .au-b button{flex:1;cursor:pointer;font:inherit;padding:4px 0;border-radius:2px;
+    background:rgba(10,24,32,.9);border:1px solid rgba(126,240,208,.3);color:#7ef0d0}
+  #sim .au-b button.no{border-color:rgba(255,77,109,.5);color:#ff8a9a}
+  #sim .au-b button:hover{filter:brightness(1.5)}
+
+  #caption{position:absolute;left:50%;transform:translateX(-50%);bottom:92px;
+    pointer-events:none;max-width:min(720px,80vw);text-align:center;
+    font:600 15px/1.5 ui-monospace,Menlo,monospace;color:#dff6ff;
+    padding:10px 18px;border-radius:3px;
+    background:linear-gradient(180deg,rgba(4,12,18,.0),rgba(4,12,18,.88) 30%,rgba(4,12,18,.88));
+    text-shadow:0 2px 10px rgba(0,0,0,.9)}
+  #caption b{color:#7ef0d0}
+  /* 两块图例各自能收起来：点标题那一行就行 */
+  #legend h2, #legend2 .lg-h{cursor:pointer;user-select:none}
+  #legend h2::after, #legend2 .lg-h::after{content:' ▾';opacity:.55;font-size:10px}
+  #legend.collapsed h2::after, #legend2.collapsed .lg-h::after{content:' ▸'}
+  #legend.collapsed .lg, #legend2.collapsed .lg-row{display:none}
+  #legend.collapsed, #legend2.collapsed{width:auto!important;padding-bottom:2px}
+  /* 城里的流水：发生过的事留得下 */
+  #feed{position:absolute;right:22px;bottom:22px;width:308px;max-height:38vh;
+    pointer-events:auto;overflow:hidden;background:rgba(6,14,20,.88);
+    border:1px solid rgba(34,231,255,.22);border-radius:2px;
+    backdrop-filter:blur(8px);font:11.5px/1.5 ui-monospace,Menlo,monospace}
+  #feed .fd-h{padding:8px 12px 6px;color:#9ff4ff;font-weight:600;
+    letter-spacing:.1em;cursor:pointer;user-select:none;
+    border-bottom:1px solid rgba(34,231,255,.12)}
+  #feed .fd-h::after{content:' ▾';opacity:.55;font-size:10px}
+  #feed.collapsed .fd-h::after{content:' ▸'}
+  #feed.collapsed #fd-list{display:none}
+  #fd-list{max-height:calc(38vh - 32px);overflow:auto;padding:4px 0 6px}
+  #fd-list .fd-row{display:flex;gap:8px;padding:4px 12px;color:#8fb6c8}
+  #fd-list .fd-row i{color:#4a6a7a;font-style:normal;flex:0 0 auto}
+  #fd-list .fd-row.good span{color:#7ef0d0}
+  #fd-list .fd-row.bad span{color:#ff8a97}
+  #fd-list .fd-row.warn span{color:#ffc777}
+  #fd-list .fd-e{padding:8px 12px;color:#4a6a7a}
+
+  /* 城里的旋钮：拖一个，整座城的判定跟着变 */
+  #tune{position:absolute;left:22px;top:38%;width:246px;max-height:52vh;
+    pointer-events:auto;overflow:hidden;background:rgba(6,14,20,.9);
+    border:1px solid rgba(255,209,102,.26);border-radius:2px;
+    backdrop-filter:blur(8px);font:11.5px/1.5 ui-monospace,Menlo,monospace;
+    transition:opacity .2s}
+  #tune .tn-h{padding:8px 12px 6px;color:#ffd166;font-weight:600;letter-spacing:.1em;
+    cursor:pointer;user-select:none;border-bottom:1px solid rgba(255,209,102,.14)}
+  #tune .tn-h::after{content:' ▾';opacity:.55;font-size:10px}
+  #tune.collapsed .tn-h::after{content:' ▸'}
+  #tune.collapsed #tune-list, #tune.collapsed .tn-foot{display:none}
+  #tune-list{padding:6px 12px;max-height:calc(52vh - 66px);overflow:auto}
+  .tn-row{margin:8px 0}
+  .tn-row .tn-lab{display:flex;justify-content:space-between;color:#8fb6c8}
+  .tn-row .tn-lab b{color:#ffd166;font-weight:600}
+  .tn-row input[type=range]{width:100%;margin:4px 0 0;accent-color:#ffd166;height:14px;cursor:pointer}
+  .tn-foot{padding:5px 12px 8px;border-top:1px solid rgba(255,209,102,.1)}
+  #tune-reset{width:100%;background:transparent;border:1px solid rgba(255,209,102,.3);
+    color:#ffd166;border-radius:2px;cursor:pointer;padding:3px 0;font:inherit}
+  #tune-reset:hover{background:rgba(255,209,102,.1)}
+
+  /* ── 经营者：一回合版 ──
+     独立覆盖层，不跟沙盘的调试面板混在一起：进游戏就只剩"我的决策"。
+     所有数字都直接写出来，不靠颜色暗示——经营游戏最怕玩家算不明白账。 */
+  #game{position:fixed;inset:0;z-index:80;display:none;place-items:center;padding:20px;
+    background:radial-gradient(120% 90% at 50% 0%,rgba(9,22,30,.94),rgba(2,6,10,.975));
+    backdrop-filter:blur(3px)}
+  #game.on{display:grid}
+  .gm-box{width:min(700px,94vw);max-height:92vh;overflow:auto;
+    background:linear-gradient(180deg,#08141c,#05101a);
+    border:1px solid rgba(126,240,208,.3);border-radius:3px;
+    box-shadow:0 18px 60px rgba(0,0,0,.75);
+    font:13px/1.62 ui-monospace,Menlo,monospace;color:#bfe6f2}
+  .gm-head{display:flex;align-items:center;gap:14px;padding:14px 18px 12px;
+    border-bottom:1px solid rgba(126,240,208,.16)}
+  .gm-head b{font-size:15px;color:#7ef0d0;letter-spacing:.06em}
+  .gm-q{color:#9ff4ff;font-weight:600}
+  .gm-bud{margin-left:auto;color:#ffd166;font-weight:600}
+  .gm-x{background:transparent;border:1px solid rgba(126,240,208,.28);color:#7ef0d0;
+    width:24px;height:24px;border-radius:2px;cursor:pointer;font:inherit;line-height:1}
+  .gm-x:hover{background:rgba(126,240,208,.12)}
+
+  .gm-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;padding:14px 18px}
+  .gm-stat{font-size:12px}
+  .gm-stat .lab{display:flex;justify-content:space-between;color:#8fb6c8}
+  .gm-stat .lab b{color:#dff6ff;font-weight:600}
+  .gm-bar{height:4px;margin-top:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+  .gm-bar i{display:block;height:100%;width:0;background:#7ef0d0;transition:width .35s}
+
+  .gm-sec{padding:4px 18px 12px}
+  .gm-sec h4{margin:0 0 8px;font-size:11px;letter-spacing:.14em;color:#5f8fa4;font-weight:600}
+  .gm-row{display:flex;align-items:center;gap:10px;margin:6px 0}
+  .gm-row .nm{flex:0 0 84px;color:#9fc4d4}
+  .gm-row input[type=range]{flex:1;height:16px;accent-color:#7ef0d0;cursor:pointer}
+  .gm-row .val{flex:0 0 52px;text-align:right;color:#ffd166;font-weight:600}
+  .gm-row.dis input[type=range]{accent-color:#5a6b78;cursor:not-allowed}
+  .gm-left{padding:2px 18px 10px;font-size:12px;color:#8fb6c8}
+  .gm-left b{color:#7ef0d0}
+  .gm-left.over b{color:#ff8a97}
+
+  .gm-ev{margin:0 18px 12px;padding:9px 12px;border-left:2px solid #ffd166;
+    background:rgba(255,209,102,.06);font-size:12px;color:#cfe4ee}
+  .gm-ev b{color:#ffd166}
+  .gm-ev.quiet{border-color:#2a4454;background:rgba(255,255,255,.02);color:#6f8b9b}
+
+  .gm-foot{padding:0 18px 16px}
+  .gm-btn{width:100%;padding:9px 0;background:rgba(126,240,208,.12);
+    border:1px solid rgba(126,240,208,.45);color:#7ef0d0;border-radius:2px;
+    cursor:pointer;font:inherit;font-weight:600;letter-spacing:.06em}
+  .gm-btn:hover{background:rgba(126,240,208,.22)}
+  .gm-btn:disabled{opacity:.4;cursor:not-allowed}
+  .gm-btn.alt{background:transparent;border-color:rgba(126,240,208,.25);font-weight:400}
+
+  .gm-res{margin:0 18px 14px;padding:12px;border:1px solid rgba(34,231,255,.2);
+    background:rgba(34,231,255,.04);font-size:12px}
+  .gm-res .rt{color:#9ff4ff;font-weight:600;margin-bottom:6px}
+  .gm-res .d{display:flex;gap:8px;padding:2px 0;color:#8fb6c8}
+  .gm-res .d span{flex:1}
+  .gm-res .d b{font-weight:600}
+  .gm-res .d b.up{color:#7ef0d0}
+  .gm-res .d b.dn{color:#ff8a97}
+
+  .gm-over{padding:6px 18px 18px;text-align:center}
+  .gm-grade{font:700 64px/1 ui-monospace,Menlo,monospace;color:#7ef0d0;
+    text-shadow:0 0 26px rgba(126,240,208,.5);margin:6px 0 2px}
+  .gm-grade.bad{color:#ff6b81;text-shadow:0 0 26px rgba(255,107,129,.45)}
+  .gm-score{color:#5f8fa4;font-size:12px;letter-spacing:.1em}
+  .gm-over .lines{text-align:left;margin:14px 0 16px;padding:0;list-style:none}
+  .gm-over .lines li{padding:3px 0;color:#9fc4d4;font-size:12.5px}
+  .gm-over .lines li::before{content:'· ';color:#7ef0d0}
+  .gm-over .reason{color:#ffb0bb;font-size:12.5px;margin:10px 0 14px}
+  .gm-hist{margin:0 18px 14px;font-size:11.5px;color:#5f8fa4}
+  .gm-hist div{padding:2px 0}
+
+  #start-game{position:absolute;left:22px;top:190px;pointer-events:auto;cursor:pointer;
+    background:rgba(255,209,102,.12);border:1px solid rgba(255,209,102,.5);color:#ffd166;
+    font:600 13px/1 ui-monospace,monospace;padding:8px 11px;border-radius:2px;
+    letter-spacing:.06em}
+  #start-game:hover{background:rgba(255,209,102,.24)}
+
+</style>
+</head>
+<script>
+  // 出错了就直接把错误写在页面上，别只留一块黑屏。
+  window.addEventListener('error', (e) => {
+    const d = document.createElement('pre');
+    d.style.cssText = 'position:fixed;left:12px;top:12px;max-width:72vw;z-index:99;background:#2a0d12;color:#ff9aa8;padding:12px;font:12px/1.5 monospace;white-space:pre-wrap;border:1px solid #ff4d6d;border-radius:6px';
+    d.textContent = '页面出错了：' + (e.message || e.error) + '\n' + (e.filename || '').split('/').pop() + ':' + (e.lineno || '') + '\n' + ((e.error && e.error.stack) || '');
+    document.body.appendChild(d);
+  });
+</script>
+<body>
+<div id="stage"><canvas id="city"></canvas></div>
+
+<div id="hud">
+  <div id="brand">
+    <h1>平台<b>城</b> · PLATFORM CITY</h1>
+    <div id="scale">SCALE · <i>全景</i></div>
+    <div id="crumb">整座城 = 一个短视频生态</div>
+  </div>
+
+  <div id="legend">
+    <h2>图例</h2>
+    <div class="lg"><span class="sw" style="color:#22e7ff;background:#22e7ff"></span>中央塔 = 推荐系统</div>
+    <div class="lg"><span class="sw" style="color:#ff2fd0;background:#ff2fd0"></span>街区 = 内容垂类</div>
+    <div class="lg"><span class="sw" style="color:#7ef0d0;background:#7ef0d0"></span>▮ = 创作者（越高粉丝越多）</div>
+    <div class="lg"><span class="sw" style="color:#ffb347;background:#ffb347"></span>橙色管线 = 钱流</div>
+    <div class="lg"><span class="sw" style="color:#9ab;background:#9ab"></span>粒子 = 观众</div>
+    <div class="lg"><span class="sw" style="color:#7ef0d0;background:#0b3a30"></span>绿色细线 = MCN 签约</div>
+    <div class="lg"><span class="sw" style="color:#ffb347;background:#ffb347"></span>旋转广告牌 = 广告竞价位</div>
+    <div class="lg"><span class="sw" style="color:#ff4d6d;background:#ff4d6d"></span>红色尖标 = 被限流</div>
+  </div>
+
+  <div id="tip">
+    <div><kbd>拖拽</kbd> 转 · <kbd>滚轮</kbd> 远近</div>
+    <div><kbd>点街区</kbd> 飞进去 · <kbd>点角色</kbd> 看它干嘛</div>
+    <div><kbd>点楼</kbd> 看楼里面 · <kbd>点一条视频</kbd> 看它那块屏</div>
+    <div><kbd>双击</kbd> 回全景</div>
+    <div style="margin-top:6px;color:#7ef0d0">中央漏斗 = 推荐流水线：自下而上 召回→粗排→精排→重排，越往上越窄，掉下来的是被筛掉的</div>
+  </div>
+
+  <button id="back">← 返回全景</button>
+  <button id="submit" hidden>▶ 模拟投稿一次</button>
+
+  <div id="logcard" hidden></div>
+
+  <button id="start-game" title="进入经营模式：4 个季度，看你能把它经营成什么样">经营者</button>
+  <button id="fold" title="收起 / 展开所有面板">▤</button>
+  <button id="guide-btn" title="八步导览：第一次看就从这里开始">◎</button>
+
+  <div id="director" hidden>
+    <button id="d-pause" title="暂停 / 继续">⏸</button>
+    <button id="d-prev" title="上一站">‹</button>
+    <button id="d-next" title="下一站">›</button>
+    <span id="d-spd">
+      <button data-s="0.5">0.5×</button><button data-s="1" class="on">1×</button><button data-s="2">2×</button>
+    </span>
+    <span id="d-only">
+      <label><input type="checkbox" data-layer="0" checked>召回</label>
+      <label><input type="checkbox" data-layer="1" checked>粗排</label>
+      <label><input type="checkbox" data-layer="2" checked>精排</label>
+      <label><input type="checkbox" data-layer="3" checked>重排</label>
+    </span>
+    <button id="d-stop" title="结束演示">✕</button>
+  </div>
+
+  <div id="caption" hidden></div>
+
+  <div id="sim">
+    <div class="sm-h">演算台 ▾</div>
+    <div class="sm-body">
+      <div class="sm-b">
+        <button id="bulk-10">+10 分钟</button>
+        <button id="bulk-60">+1 小时</button>
+        <button id="bulk-reset">清零</button>
+      </div>
+      <div id="bulk-out"><div class="sm-empty">还没快进过。快进只算逻辑，不跑画面。</div></div>
+      <div class="sm-sep"></div>
+      <div class="sm-h2">你当审核</div>
+      <div id="audit-out"><div class="sm-empty">队列空着，等有候选进来。</div></div>
+    </div>
+  </div>
+
+  <div id="guide" hidden>
+    <div class="g-h"><b id="g-n">1 / 8</b><span id="g-t"></span><button id="g-x" title="退出导览">✕</button></div>
+    <p id="g-d"></p>
+    <div class="g-b"><button id="g-prev">上一步</button><button id="g-next">下一步</button></div>
+  </div>
+
+  <div id="feed">
+    <div class="fd-h">城里的流水</div>
+    <div id="fd-list"></div>
+  </div>
+
+  <div id="tune">
+    <div class="tn-h">城里的旋钮</div>
+    <div id="tune-list"></div>
+    <div class="tn-foot"><button id="tune-reset">全部复原</button></div>
+  </div>
+
+  <div id="rolecard" hidden>
+    <div class="rc-h"><b id="rc-name"></b><button id="rc-x" title="关闭">×</button></div>
+    <div id="rc-desc"></div>
+    <div id="rc-meta"></div>
+  </div>
+</div>
+
+<div id="tokcard" hidden>
+  <div class="tk-h"><b id="tk-title"></b><button id="tk-x" title="关闭">×</button></div>
+  <div class="tk-bar"><i>内容质量</i><s><b id="tk-q" style="width:0%"></b></s></div>
+  <div class="tk-bar"><i>受众匹配</i><s><b id="tk-m" style="width:0%"></b></s></div>
+  <div id="tk-steps"></div>
+  <div id="tk-end"></div>
+</div>
+
+<div id="legend2">
+  <div class="lg-h">图例 · 谁在跟谁发生关系</div>
+  <div class="lg-row"><i class="lg-dot" style="--c:#2f8fa8"></i><b>行为</b><span>用户 → 平台：滑动 / 停留 / 点赞，向心上升的雾</span></div>
+  <div class="lg-row"><i class="lg-dot" style="--c:#9ff4ff"></i><b>曝光</b><span>平台 → 用户：从塔上打出去的亮子弹</span></div>
+  <div class="lg-row"><i class="lg-dot" style="--c:#ff6b6b"></i><b>候选</b><span>街区 → 塔：刚发布，进漏斗排队</span></div>
+  <div class="lg-row"><i class="lg-line" style="--c:#ffb347"></i><b>分账</b><span>广告主 → 平台：橙色管道，钱在里面流</span></div>
+  <div class="lg-row"><i class="lg-line" style="--c:#7ef0d0"></i><b>签约</b><span>MCN → 创作者：绿线，谁被机构收了</span></div>
+  <div class="lg-row"><i class="lg-arc" style="--c:#7ef0d0"></i><b>跟风</b><span>创作者 → 创作者：同街区抄选题（弧线）</span></div>
+  <div class="lg-row"><i class="lg-cone" style="--c:#ff4d6d"></i><b>限流</b><span>审核 → 内容：楼顶红锥，被判了</span></div>
+  <div class="lg-row"><i class="lg-band" style="--c:#7ef0d0"></i><b>完播</b><span>楼顶灯带：绿好 / 黄中 / 红差</span></div>
+  <div class="lg-row"><i class="lg-win"></i><b>活跃</b><span>窗户：亮得多 = 这个号还在更新</span></div>
+<div class="lg-row"><i class="lg-dot" style="--c:#ffd166"></i><b>正反馈</b><span>火了 → 楼体闪光 + 地面气浪，越火越亮</span></div>
+<div class="lg-row"><i class="lg-band" style="--c:#ff2b45"></i><b>负反馈</b><span>被限流 → 灯带压红、红光环扫下；MCN 签约的楼有绿环保底</span></div>
+<div class="lg-row"><i class="lg-line" style="--c:#ffb347"></i><b>投放</b><span>广告主 → 精排层：金色光束，被投街区地面有金环</span></div>
+<div class="lg-row"><i class="lg-win"></i><b>内容位</b><span>点一栋楼 → 楼壳变透明，里面三层小屏就是它在发的东西</span></div>
+</div>
+
+<div id="game">
+  <div class="gm-box">
+    <div class="gm-head">
+      <b>经营者</b>
+      <span class="gm-q" id="gm-q">第 1 / 4 季度</span>
+      <span class="gm-bud" id="gm-bud">预算 60</span>
+      <button class="gm-x" id="gm-x" title="退出经营模式">×</button>
+    </div>
+    <div class="gm-stats" id="gm-stats"></div>
+    <div class="gm-sec">
+      <h4>这一季度的预算花在哪</h4>
+      <div id="gm-spend"></div>
+    </div>
+    <div class="gm-left" id="gm-left"></div>
+    <div class="gm-sec">
+      <h4>两个不动钱、但动命的旋钮</h4>
+      <div id="gm-tilt"></div>
+    </div>
+    <div class="gm-ev quiet" id="gm-ev">还没开始。先决定这 60 点怎么花。</div>
+    <div class="gm-foot" id="gm-foot">
+      <button class="gm-btn" id="gm-go">过完这个季度 →</button>
+    </div>
+    <div class="gm-res" id="gm-res" hidden></div>
+    <div class="gm-over" id="gm-over" hidden></div>
+    <div class="gm-hist" id="gm-hist"></div>
+  </div>
+</div>
+
+<div id="boot">LOADING</div>
+
+<script type="module" src="./main.js?v=20261119g"></script>
+</body>
+</html>
