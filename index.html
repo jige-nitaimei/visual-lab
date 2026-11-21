@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VISUAL LAB · 可视化作品集</title>
+<style>
+  :root{
+    --bg:#04080d; --panel:#081420; --line:rgba(34,231,255,.16);
+    --cyan:#22e7ff; --mint:#7ef0d0; --mag:#ff2fd0; --txt:#dff2fa; --dim:#7d9dad;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(900px 520px at 18% -10%, rgba(34,231,255,.12), transparent 60%),
+      radial-gradient(760px 480px at 88% 110%, rgba(255,47,208,.10), transparent 62%),
+      var(--bg);
+    color:var(--txt);
+    font:15px/1.65 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    min-height:100%;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:64px 26px 80px}
+  header{border-bottom:1px solid var(--line);padding-bottom:26px;margin-bottom:40px}
+  .kicker{
+    font:600 11px/1 ui-monospace,Consolas,monospace;letter-spacing:.32em;
+    color:var(--cyan);opacity:.85;text-transform:uppercase;margin:0 0 14px
+  }
+  h1{
+    margin:0;font-size:clamp(30px,5vw,46px);line-height:1.12;font-weight:800;
+    letter-spacing:-.02em;
+    background:linear-gradient(100deg,var(--mint),var(--cyan) 45%,var(--mag));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sub{margin:14px 0 0;color:var(--dim);max-width:60ch}
+  .grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .card{
+    display:block;text-decoration:none;color:inherit;
+    background:linear-gradient(180deg,rgba(11,26,40,.9),rgba(6,14,22,.9));
+    border:1px solid var(--line);border-radius:14px;padding:20px 20px 18px;
+    transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+    position:relative;overflow:hidden;
+  }
+  .card::after{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(140deg,rgba(34,231,255,.07),transparent 42%);
+    opacity:0;transition:opacity .18s ease
+  }
+  .card:hover{transform:translateY(-3px);border-color:rgba(34,231,255,.42);
+    box-shadow:0 18px 44px -18px rgba(34,231,255,.5)}
+  .card:hover::after{opacity:1}
+  .card h2{margin:0 0 8px;font-size:19px;letter-spacing:-.01em}
+  .card p{margin:0 0 14px;color:var(--dim);font-size:13.5px}
+  .tags{display:flex;flex-wrap:wrap;gap:7px;margin:0}
+  .tag{
+    font:600 10.5px/1 ui-monospace,Consolas,monospace;letter-spacing:.08em;
+    padding:6px 9px;border-radius:999px;color:var(--mint);
+    border:1px solid rgba(126,240,208,.28);background:rgba(126,240,208,.07);
+  }
+  .soon{
+    border-style:dashed;border-color:rgba(255,255,255,.12);
+    background:rgba(255,255,255,.015);cursor:default
+  }
+  .soon:hover{transform:none;box-shadow:none;border-color:rgba(255,255,255,.12)}
+  .soon h2,.soon p{color:#5f7a8c}
+  .soon .tag{color:#5f7a8c;border-color:rgba(255,255,255,.1);background:transparent}
+  footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--line);
+    color:#4f6878;font-size:12.5px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  footer a{color:var(--dim);text-decoration:none}
+  footer a:hover{color:var(--cyan)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="kicker">visual lab / 词元工坊</p>
+    <h1>可视化 · 数字孪生 · 可交互沙盘</h1>
+    <p class="sub">自己写着玩的东西。每一个都是单页、纯前端、打开就能跑，不需要装任何东西。点卡片进。</p>
+  </header>
+
+  <main class="grid">
+    <a class="card" href="./platform-city/">
+      <h2>平台城 · 短视频生态沙盘</h2>
+      <p>把短视频平台摊开成一座城：中央塔是推荐系统，四个街区是垂类，楼高是粉丝，窗户是活跃度。能看到一条作品怎么从召回一路被筛到重排，也能切到经营者视角，四个季度调一次预算，最后给你一个评级。</p>
+      <div class="tags"><span class="tag">THREE.JS</span><span class="tag">3D</span><span class="tag">经营模拟</span><span class="tag">可交互</span></div>
+    </a>
+
+    <div class="card soon">
+      <h2>更多项目搬上来中</h2>
+      <p>后续会陆续把别的可视化、数字孪生、物理仿真往这里搬。</p>
+      <div class="tags"><span class="tag">COMING SOON</span></div>
+    </div>
+  </main>
+
+  <footer>
+    <span>纯静态 · 无后端 · 无追踪</span>
+    <a href="https://github.com/jige-nitaimei/visual-lab">source on GitHub</a>
+  </footer>
+</div>
+</body>
+</html>
